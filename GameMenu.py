@@ -9,25 +9,21 @@ BackgroundColor = "#C4A484"
 BackBlockColor = "#add8e6"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
+
 class CustomButton:
     btn = None
     ButtonDown = None
     ButtonUp = None
     action = None
     def __init__(self,buttonImage,pressedButtonImage,parent,x,y,action):
+        
         self.ButtonDown = tk.PhotoImage(file=dir_path+"/Images/"+pressedButtonImage+".png")
         self.ButtonUp = tk.PhotoImage(file=dir_path+"/Images/"+buttonImage+".png")
-
-
         self.btn = tk.Label(parent,bd=0,bg=BackBlockColor)
-        
         self.btn.config(image=self.ButtonUp)
-
         self.btn.place(relx=x,rely=y,anchor="s")
         self.btn.bind('<ButtonPress-1>',self.press)
-        
         self.btn.bind('<ButtonRelease-1>',self.release)
-
         self.action = action
 
     def press(self,event):
@@ -38,12 +34,22 @@ class CustomButton:
 
     def release(self,event):
         self.btn.config(image=self.ButtonUp)
+
+
 #exit app
 def quitApp():
 
     os._exit(1)
+
+def SaveGame():
+    
+    print("Save")
+def LoadGame():
+
+    print("Load")
 #MainFinction
 def ShowMenu():
+    #init window
     window = tk.Tk()
     window.title("Vrhcáby")
     #set background color
@@ -52,7 +58,58 @@ def ShowMenu():
     window.geometry(str(window_width) + "x" + str(window_height))
 
 
-    greeting = tk.Label(text=dir_path)
+    
+
+
+
+
+
+    # create a menubar
+    menubar = tk.Menu(window)
+    window.config(menu=menubar)
+
+    # create the file_menu
+    file_menu = tk.Menu(
+        menubar,
+        tearoff=0
+    )
+
+    # add menu items to the File menu
+    file_menu.add_command(label='Save',command=SaveGame)
+    file_menu.add_command(label='Load',command=LoadGame)
+    file_menu.add_command(label='Close')
+    
+    file_menu.add_separator()
+    
+    # add Exit menu item
+    file_menu.add_command(
+        label='Exit',
+        command=quitApp
+    )
+
+    # add the File menu to the menubar
+    menubar.add_cascade(
+        label="File",
+        menu=file_menu
+    )
+    # create the Help menu
+    help_menu = tk.Menu(
+        menubar,
+        tearoff=0
+    )
+
+    help_menu.add_command(label='Welcome')
+    help_menu.add_command(label='About...')
+
+    # add the Help menu to the menubar
+    menubar.add_cascade(
+        label="Help",
+        menu=help_menu
+    )
+
+
+
+    file_menu.entryconfig(0,state=tk.DISABLED)
 
 
 

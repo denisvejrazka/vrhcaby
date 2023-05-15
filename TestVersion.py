@@ -2,8 +2,65 @@
 import pygame as pg
 import random
 import sys
+import tkinter as tk
+import os
 
-import ctypes
+
+window = tk.Tk()
+
+
+
+# create a menubar
+menubar = tk.Menu(window)
+window.config(menu=menubar)
+
+# create the file_menu
+file_menu = tk.Menu(
+    menubar,
+    tearoff=0
+)
+
+# add menu items to the File menu
+file_menu.add_command(label='Save')
+file_menu.add_command(label='Load')
+file_menu.add_command(label='Close')
+file_menu.add_separator()
+
+# add Exit menu item
+file_menu.add_command(
+    label='Exit',
+    command=window.destroy
+)
+
+# add the File menu to the menubar
+menubar.add_cascade(
+    label="File",
+    menu=file_menu
+)
+# create the Help menu
+help_menu = tk.Menu(
+    menubar,
+    tearoff=0
+)
+
+help_menu.add_command(label='Welcome')
+help_menu.add_command(label='About...')
+
+# add the Help menu to the menubar
+menubar.add_cascade(
+    label="Help",
+    menu=help_menu
+)
+
+embed = tk.Frame(window, width=1600, height=1000)
+window.resizable(False,False)
+embed.pack()
+
+# Tell pygame's SDL window which window ID to use
+os.environ['SDL_WINDOWID'] = str(embed.winfo_id())
+# Show the window so it's assigned an ID.
+window.update()
+
 
 
 # Classes
@@ -224,13 +281,24 @@ for column in range(2):
 
 # General PyGame setup
 pg.init()
+
+running = True
+def done():
+    global running
+    running = False
+
+window.protocol("WM_DELETE_WINDOW", done)
+
+
 clock = pg.time.Clock()
 
-while True:
+while running:
     for event in pg.event.get():
         if event.type == pg.QUIT:
+            os._exit(1)
             pg.quit()
             sys.exit()
+            
 
         # handle MOUSEBUTTONUP
         if event.type == pg.MOUSEBUTTONUP:
@@ -252,4 +320,12 @@ while True:
 
 # PyGame Code
     pg.display.flip()
+    window.update_idletasks()
+    window.update()
     clock.tick(60)
+pygame.quit()
+
+
+
+
+
