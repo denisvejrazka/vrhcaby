@@ -239,7 +239,8 @@ while True:
                 for stone in tile.stones:
                     if(stone.circle_collider.collidepoint(pos)):
                         #HERE COLLIZION DETECTION
-                        print(stone)
+                        stone.highlighted = True
+
                     
             
     
