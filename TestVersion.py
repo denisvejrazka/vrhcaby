@@ -3,6 +3,9 @@ import pygame as pg
 import random
 import sys
 
+import ctypes
+
+
 # Classes
 
 
@@ -26,7 +29,7 @@ class Stone:
     highlight_color = (255, 0, 0)
     highlight_thickness = 5
     base_radius = 40
-
+    circle_collider = None
     def __init__(self, player: Player):
         self.highlighted = False
         self.player = player
@@ -35,8 +38,10 @@ class Stone:
         y_shifted = (pos_y + (2*self.base_radius)*(num)+self.base_radius) if direction else (
             pos_y + (2*self.base_radius)*(-num)-self.base_radius)
         color = self.white_color if self.player.color is "White" else self.black_color
-        pg.draw.circle(screen, color, (pos_x + pos_x_shift,
+        self.circle_collider = pg.draw.circle(screen, color, (pos_x + pos_x_shift,
                        y_shifted), self.base_radius)
+        
+        
         if self.highlighted:
             pg.draw.circle(screen, self.highlight_color, (pos_x + pos_x_shift,
                                                           y_shifted), self.base_radius, self.highlight_thickness)
@@ -227,6 +232,17 @@ while True:
             pg.quit()
             sys.exit()
 
+        # handle MOUSEBUTTONUP
+        if event.type == pg.MOUSEBUTTONUP:
+            pos = pg.mouse.get_pos()
+            for tile in tiles:
+                for stone in tile.stones:
+                    if(stone.circle_collider.collidepoint(pos)):
+                        #HERE COLLIZION DETECTION
+                        print(stone)
+                    
+            
+    
 # Game loop
     for dice in dices:
         dice.paint(game_board._screen)
