@@ -70,7 +70,11 @@ class Player:
     def __init__(self, name: str, color: pg.color):
         self.name = name
         self.color = color
+        self.score = []
 
+    def add_to_score(self, stone):
+        self.score.append(stone)
+        
 
 class ClickManager:
     def __init__(self):
@@ -165,6 +169,7 @@ class GameBoard:
         self._screen = pg.display.set_mode(
             (self.screen_width, self.screen_height))
         self._screen.fill(self.box_color)
+        self.game_over = False
 
     def paint(self):
         for tile in self.tiles:
@@ -173,7 +178,13 @@ class GameBoard:
     def move_stone(self, tile_from: Tile, tile_to: Tile):
         tile_to.add_stone(tile_from.stones[-1])
         tile_from.remove_stone()
+        self.check_win()
 
+    def check_win(self):
+        for player in self.players:
+            if len(player.score) == 15:
+                self.game_over = True
+                break
 
 class Dice:
     base_size = 100
@@ -308,7 +319,10 @@ while running:
                     if(stone.circle_collider.collidepoint(pos)):
                         #HERE COLLIZION DETECTION
                         stone.highlighted = True
-
+        
+        if game_board.game_over:
+            #UI pro výhru a prohru
+            pass
                     
             
     
