@@ -66,22 +66,42 @@ window.update()
 # Classes
 
 
+
 class Player:
     def __init__(self, name: str, color: pg.color):
         self.name = name
         self.color = color
-        self.score = []
 
-    def add_to_score(self, stone):
-        self.score.append(stone)
-        
 
 class ClickManager:
-    def __init__(self):
-        pass
 
-    def click(self, x: int, y: int):
-        pass
+    def __init__(self):
+        self.currentTile = None
+
+    def click(self, tiles, dices, turn_manager, position):
+        for tile in tiles:
+            if tile.highlighted and tile.tile_collider.collidepoint(position):
+                for tile2 in tiles:
+                    tile2.unhighlight_stones()
+                    tile2.highlighted = False
+                #POKUD TU JE JEDEN KÁMEN PAK HO VYHOĎ
+                GameBoard.move_stone(self.currentTile, tile)
+                turn_manager.player_on_turn = player1 if turn_manager.player_on_turn == player2 else player2
+                return
+        for tile in tiles:
+            for stone in tile.stones:
+                if stone.highlighted and stone.circle_collider.collidepoint(position):
+                    self.currentTile = tile
+                    for tile2 in tiles:
+                        if tile != tile2:
+                            tile2.unhighlight_stones()
+                    turn_manager.find_available_turns(dices, tiles, tile)
+                    return
+        for tile in tiles:
+            tile.unhighlight_stones()
+            tile.highlighted = False
+        self.currentTile = None
+        turn_manager.find_all_stones(game_board.tiles)
 
 
 class Stone:
@@ -90,8 +110,9 @@ class Stone:
     highlight_color = (255, 0, 0)
     highlight_thickness = 5
     base_radius = 40
-    circle_collider = None
+
     def __init__(self, player: Player):
+        self.circle_collider = None
         self.highlighted = False
         self.player = player
 
@@ -100,9 +121,7 @@ class Stone:
             pos_y + (2*self.base_radius)*(-num)-self.base_radius)
         color = self.white_color if self.player.color is "White" else self.black_color
         self.circle_collider = pg.draw.circle(screen, color, (pos_x + pos_x_shift,
-                       y_shifted), self.base_radius)
-        
-        
+                                                              y_shifted), self.base_radius)
         if self.highlighted:
             pg.draw.circle(screen, self.highlight_color, (pos_x + pos_x_shift,
                                                           y_shifted), self.base_radius, self.highlight_thickness)
@@ -116,6 +135,7 @@ class Tile:
     height_multiplier = 3
 
     def __init__(self, pos_x: float, pos_y: float, size: float, color: pg.Color):
+        self.tile_collider = None
         self.highlighted = False
         self.stones = []
         self._size = size
@@ -127,7 +147,7 @@ class Tile:
         self.stones.append(stone)
 
     def remove_stone(self):
-        self.stones[-1].remove()
+        self.stones.pop()
 
     def paint(self, screen):
         tileDirection = self._size*self.height_multiplier if self._pos_y is 0 else - \
@@ -136,7 +156,7 @@ class Tile:
                   [self._pos_x + self._size / 2, self._pos_y + tileDirection],
                   [self._pos_x + self._size, self._pos_y]]
 
-        pg.draw.polygon(
+        self.tile_collider = pg.draw.polygon(
             screen, self.white_color if self._color is "White" else self.black_color, points)
         if self.highlighted:
             pg.draw.polygon(
@@ -175,34 +195,37 @@ class GameBoard:
         for tile in self.tiles:
             tile.paint(self._screen)
 
-    def move_stone(self, tile_from: Tile, tile_to: Tile):
+    @staticmethod
+    def move_stone(tile_from: Tile, tile_to: Tile):
         tile_to.add_stone(tile_from.stones[-1])
         tile_from.remove_stone()
-        self.check_win()
 
-    def check_win(self):
-        for player in self.players:
-            if len(player.score) == 15:
-                self.game_over = True
-                break
 
 class Dice:
+    roll_used = False
     base_size = 100
     dot_base_size = 10
     border_radius = 15
+    color_available = (240, 240, 240)
+    color_disabled = (125, 125, 125)
 
     def __init__(self, pos_x: float, pos_y: float):
-        self._number = 1
+        self.value = 1
         self._pos_x = pos_x-self.base_size/2
         self._pos_y = pos_y-self.base_size/2
 
     def throw(self, rand_from: int, rand_to: int):
-        self._number = random.randint(rand_from, rand_to)
+        self.roll_used = False
+        self.value = random.randint(rand_from, rand_to)
 
     def paint(self, screen: pg.surface):
-        pg.draw.rect(screen, "White", [
-                     self._pos_x, self._pos_y, self.base_size, self.base_size], 0, self.border_radius)
-        match self._number:
+        if self.roll_used:
+            pg.draw.rect(screen, self.color_disabled, [
+                self._pos_x, self._pos_y, self.base_size, self.base_size], 0, self.border_radius)
+        else:
+            pg.draw.rect(screen, self.color_available, [
+                self._pos_x, self._pos_y, self.base_size, self.base_size], 0, self.border_radius)
+        match self.value:
             case 1:
                 self.paint_one(screen)
             case 2:
@@ -246,18 +269,45 @@ class Dice:
 
 
 class TurnManager:
-    possible_turns = []
+    available_turns = []
+    player_changed = True
 
     def __init__(self):
         self._turn_history = []
         self._player_on_turn = None
 
+    @property
+    def player_on_turn(self):
+        return self._player_on_turn
 
-class Turn:
-    def __init__(self, player: Player, from_tile: Tile, to_tile: Tile):
-        self._player = player
-        self._from_tile = from_tile
-        self._to_tile = to_tile
+    @player_on_turn.setter
+    def player_on_turn(self, value):
+        self._player_on_turn = value
+        self.player_changed = True
+
+    def find_all_stones(self, tiles):
+        for tile in tiles:
+            if len(tile.stones) > 0:
+                if tile.stones[0].player == self.player_on_turn:
+                    tile.highlight_stone()
+
+    def find_available_turns(self, dices, tiles, tile):
+        tile_index = tiles.index(tile)
+        for dice in dices:
+            if tile_index - dice.value > 0 and self.player_on_turn == player1:
+                self.find_available_turn(tiles, tile_index-dice.value)
+            if tile_index + dice.value < 24 and self.player_on_turn == player2:
+                self.find_available_turn(tiles, tile_index+dice.value)
+
+    def find_available_turn(self, tiles, tile_index):
+        if len(tiles[tile_index].stones) == 1:
+            tiles[tile_index].highlighted = True
+        if len(tiles[tile_index].stones) == 0:
+            tiles[tile_index].highlighted = True
+        if len(tiles[tile_index].stones) > 0:
+            if tiles[tile_index].stones[0].player == self._player_on_turn:
+                tiles[tile_index].highlighted = True
+
 
 
 # Game initialization
@@ -265,6 +315,8 @@ player1 = Player("Player1", "White")
 player2 = Player("Player2", "Black")
 click_manager = ClickManager()
 game_board = GameBoard(player1, player2)
+turn_manager = TurnManager()
+turn_manager.player_on_turn = player1
 dices = [Dice(game_board.screen_width/12*11, game_board.screen_height/2),
          Dice(game_board.screen_width/12*10, game_board.screen_height/2)]
 tiles = game_board.tiles
@@ -290,6 +342,7 @@ for column in range(2):
     tiles[23].add_stone(Stone(player2))
 
 
+
 # General PyGame setup
 pg.init()
 
@@ -313,12 +366,7 @@ while running:
 
         # handle MOUSEBUTTONUP
         if event.type == pg.MOUSEBUTTONUP:
-            pos = pg.mouse.get_pos()
-            for tile in tiles:
-                for stone in tile.stones:
-                    if(stone.circle_collider.collidepoint(pos)):
-                        #HERE COLLIZION DETECTION
-                        stone.highlighted = True
+            click_manager.click(tiles, dices, turn_manager, pg.mouse.get_pos())
         
         if game_board.game_over:
             #UI pro výhru a prohru
@@ -329,15 +377,20 @@ while running:
 # Game loop
     for dice in dices:
         dice.paint(game_board._screen)
-        dice.throw(0, 7)
     game_board.paint()
 
+    if turn_manager.player_changed:
+        turn_manager.player_changed = False
+        for dice in dices:
+            dice.throw(1, 6)
+        turn_manager.find_all_stones(game_board.tiles)
+        
 # PyGame Code
     pg.display.flip()
     window.update_idletasks()
     window.update()
     clock.tick(60)
-pygame.quit()
+    game_board._screen.fill(game_board.box_color)
 
 
 
