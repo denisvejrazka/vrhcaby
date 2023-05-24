@@ -6,6 +6,7 @@ import tkinter as tk
 import os
 
 
+
 window = tk.Tk()
 
 
@@ -52,7 +53,7 @@ menubar.add_cascade(
     menu=help_menu
 )
 
-embed = tk.Frame(window, width=1600, height=1000)
+embed = tk.Frame(window, width=1400, height=800)
 window.resizable(False,False)
 embed.pack()
 
@@ -68,10 +69,16 @@ window.update()
 
 
 class Player:
-    def __init__(self, name: str, color: pg.color):
+    
+    def __init__(self, name: str, color: pg.color, direction: bool):
         self.name = name
         self.color = color
+        self.homeTile = HomeTile(GameBoard.screen_width/14*13, GameBoard.screen_height/3*2 if direction else 0, 30, "White")
+        self.barTile = BarTile(GameBoard.screen_width/14*6, GameBoard.screen_height/3*2 if direction else 0, 30, "White")
 
+    def paint(self, screen):
+        self.homeTile.paint(screen)
+        self.barTile.paint(screen)
 
 class ClickManager:
 
@@ -84,7 +91,7 @@ class ClickManager:
                 for tile2 in tiles:
                     tile2.unhighlight_stones()
                     tile2.highlighted = False
-                #POKUD TU JE JEDEN KÁMEN PAK HO VYHOĎ
+                #POKUD TU JE JEN JEDEN KÁMEN PAK HO VYHOĎ DO BARU DRUHÉHO HRÁČE
                 GameBoard.move_stone(self.currentTile, tile)
                 turn_manager.player_on_turn = player1 if turn_manager.player_on_turn == player2 else player2
                 return
@@ -109,7 +116,7 @@ class Stone:
     black_color = (0, 0, 0)
     highlight_color = (255, 0, 0)
     highlight_thickness = 5
-    base_radius = 40
+    base_radius = 25
 
     def __init__(self, player: Player):
         self.circle_collider = None
@@ -149,7 +156,7 @@ class Tile:
     def remove_stone(self):
         self.stones.pop()
 
-    def paint(self, screen):
+    def paint(self, screen: pg.surface):
         tileDirection = self._size*self.height_multiplier if self._pos_y is 0 else - \
             self._size*self.height_multiplier
         points = [[self._pos_x, self._pos_y],
@@ -175,9 +182,53 @@ class Tile:
             stone.highlighted = False
 
 
+class HomeTile(Tile):
+
+    def __init__(self, pos_x: float, pos_y: float, size: float, color: pg.Color):
+        super().__init__(pos_x, pos_y, size, color)
+
+    def paint(self, screen: pg.surface):
+        pg.draw.rect(screen, "White" ,[self._pos_x, self._pos_y, GameBoard.screen_width/14, GameBoard.screen_height/3], 0, 1)
+        for num in range(len(self.stones)):
+            self.stones[num].paint(screen, self._pos_x,
+                                   self._pos_y, num/len(self.stones), self._size/2, True if self._pos_y is 0 else False)
+        
+    def add_stone(self, stone: Stone):
+        return super().add_stone(stone)
+    
+    def remove_stone(self):
+        return super().remove_stone()
+   
+
+class BarTile(Tile):
+
+    def __init__(self, pos_x: float, pos_y: float, size: float, color: pg.Color):
+        super().__init__(pos_x, pos_y, size, color)
+
+    def paint(self, screen: pg.surface):
+        pg.draw.rect(screen, "White" ,[self._pos_x, self._pos_y, GameBoard.screen_width/14, GameBoard.screen_height/3], 0, 1)
+        for num in range(len(self.stones)):
+            self.stones[num].paint(screen, self._pos_x,
+                                   self._pos_y, num, self._size/2, True if self._pos_y is 0 else False)
+
+    def add_stone(self, stone: Stone):
+        return super().add_stone(stone)
+    
+    def remove_stone(self):
+        return super().remove_stone()
+
+    def highlight_stone(self):
+        if len(self.stones) > 0:
+            self.stones[-1].highlighted = True
+    
+    def unhighlight_stones(self):
+        for stone in self.stones:
+            stone.highlighted = False
+
+
 class GameBoard:
-    screen_width = 1600
-    screen_height = 1000
+    screen_width = 1400
+    screen_height = 800
     base_margin = 30
     box_color = (171, 117, 46)
     surface_color = (247, 236, 200)
@@ -268,6 +319,9 @@ class Dice:
                        self._pos_x + self.base_size/5*4, self._pos_y + self.base_size/2], self.dot_base_size)
 
 
+
+
+
 class TurnManager:
     available_turns = []
     player_changed = True
@@ -311,13 +365,13 @@ class TurnManager:
 
 
 # Game initialization
-player1 = Player("Player1", "White")
-player2 = Player("Player2", "Black")
+player1 = Player("Player1", "White", True)
+player2 = Player("Player2", "Black", False)
 click_manager = ClickManager()
 game_board = GameBoard(player1, player2)
 turn_manager = TurnManager()
 turn_manager.player_on_turn = player1
-dices = [Dice(game_board.screen_width/12*11, game_board.screen_height/2),
+dices = [Dice(game_board.screen_width/11*11, game_board.screen_height/2),
          Dice(game_board.screen_width/12*10, game_board.screen_height/2)]
 tiles = game_board.tiles
 for pos_y in range(2):
@@ -325,8 +379,8 @@ for pos_y in range(2):
         if pos_x is 6:
             continue
         game_board.tiles.append(
-            Tile(pos_x*game_board.screen_width/13 if pos_y is 1 else game_board.screen_width-(pos_x+1)*game_board.screen_width/13,
-                 game_board.screen_height if pos_y is 1 else 0, game_board.screen_width/13,
+            Tile(pos_x*game_board.screen_width/14 if pos_y is 1 else game_board.screen_width-(pos_x+2)*game_board.screen_width/14,
+                 game_board.screen_height if pos_y is 1 else 0, game_board.screen_width/14,
                  (player1.color if pos_x % 2 is 0 else player2.color) if pos_y is 1 else player1.color if pos_x % 2 is 1 else player2.color))
 
 for column in range(5):
@@ -384,7 +438,8 @@ while running:
         for dice in dices:
             dice.throw(1, 6)
         turn_manager.find_all_stones(game_board.tiles)
-        
+    player1.paint(game_board._screen)
+    player2.paint(game_board._screen)
 # PyGame Code
     pg.display.flip()
     window.update_idletasks()
