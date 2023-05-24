@@ -1,14 +1,11 @@
 # Imports
 import pygame as pg
 import random
-import sys
 import tkinter as tk
 import os
 
 
-
 # Classes
-
 class Game:
     def __init__(self):
         self.window = tk.Tk()
@@ -24,46 +21,46 @@ class Game:
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
 
         # Add menu items to the File menu
-        self.file_menu.add_command(label='Save')
-        self.file_menu.add_command(label='Load')
+        self.file_menu.add_command(label="Save")
+        self.file_menu.add_command(label="Load")
         self.file_menu.add_separator()
-        self.file_menu.add_command(label='Close', command=self.window.destroy)
+        self.file_menu.add_command(label="Close", command=self.window.destroy)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label='Exit', command=self.window.quit)
+        self.file_menu.add_command(label="Exit", command=self.window.quit)
 
         # Create the Help menu
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
         # Add menu items to the Help menu
-        self.help_menu.add_command(label='Welcome')
-        self.help_menu.add_command(label='About...')
+        self.help_menu.add_command(label="Welcome")
+        self.help_menu.add_command(label="About...")
 
         # Create a frame for embedding Pygame
         self.embed_frame = tk.Frame(self.window, width=1400, height=800)
         self.embed_frame.pack()
 
         # Tell Pygame's SDL window which window ID to use
-        os.environ['SDL_WINDOWID'] = str(self.embed_frame.winfo_id())
+        os.environ["SDL_WINDOWID"] = str(self.embed_frame.winfo_id())
 
         # Show the window so it's assigned an ID.
         self.window.update()
 
+
 class Player:
-    
     def __init__(self, name: str, color: pg.color, direction: bool):
         self.name = name
         self.color = color
-        tile_y = GameBoard.screen_height/3*2 if direction else 0
-        self.home_tile = HomeTile(GameBoard.screen_width/14*13, tile_y, 30, "White")
-        self.bar_tile = BarTile(GameBoard.screen_width/14*6, tile_y, 30, "White")
+        tile_y = GameBoard.screen_height / 3 * 2 if direction else 0
+        self.home_tile = HomeTile(GameBoard.screen_width / 14 * 13, tile_y, 30, "White")
+        self.bar_tile = BarTile(GameBoard.screen_width / 14 * 6, tile_y, 30, "White")
 
     def paint(self, screen):
         self.home_tile.paint(screen)
         self.bar_tile.paint(screen)
 
-class ClickManager:
 
+class ClickManager:
     def __init__(self):
         self.currentTile = None
 
@@ -93,7 +90,7 @@ class ClickManager:
             tile.highlighted = False
         self.current_tile = None
         turn_manager.find_all_stones(game_board.tiles)
-        
+
 
 class Stone:
     white_color = (255, 255, 255)
@@ -107,13 +104,30 @@ class Stone:
         self.highlighted = False
         self.player = player
 
-    def paint(self, screen: pg.surface, x: float, y: float, num: int, x_shift: float, direction: bool):
-        y_shift = (y + (2 * self.base_radius) * num + self.base_radius) if direction else (y + (2 * self.base_radius) * (-num) - self.base_radius)
+    def paint(
+        self,
+        screen: pg.surface,
+        x: float,
+        y: float,
+        num: int,
+        x_shift: float,
+        direction: bool,
+    ):
+        y_shift = (
+            (y + (2 * self.base_radius) * num + self.base_radius)
+            if direction
+            else (y + (2 * self.base_radius) * (-num) - self.base_radius)
+        )
         color = self.white_color if self.player.color == "White" else self.black_color
         self.circle_collider = pg.draw.circle(screen, color, (x + x_shift, y_shift), self.base_radius)
         if self.highlighted:
-            pg.draw.circle(screen, self.highlight_color, (x + x_shift, y_shift), self.base_radius, self.highlight_thickness)
-
+            pg.draw.circle(
+                screen,
+                self.highlight_color,
+                (x + x_shift, y_shift),
+                self.base_radius,
+                self.highlight_thickness,
+            )
 
 
 class Tile:
@@ -143,19 +157,27 @@ class Tile:
         points = [
             [self.pos_x, self.pos_y],
             [self.pos_x + self.size / 2, self.pos_y + tile_direction],
-            [self.pos_x + self.size, self.pos_y]
+            [self.pos_x + self.size, self.pos_y],
         ]
 
-        self.tile_collider = pg.draw.polygon(screen, self.white_color if self.color == "White" else self.black_color, points)
+        self.tile_collider = pg.draw.polygon(
+            screen,
+            self.white_color if self.color == "White" else self.black_color,
+            points,
+        )
 
         if self.highlighted:
             pg.draw.polygon(screen, self.highlight_color, points, self.highlight_thickness)
 
         for i, stone in enumerate(self.stones):
-            stone.paint(screen, self.pos_x, self.pos_y, i, self.size / 2, self.pos_y == 0)
-
-
-
+            stone.paint(
+                screen,
+                self.pos_x,
+                self.pos_y,
+                i,
+                self.size / 2,
+                self.pos_y == 0,
+            )
 
     def highlight_stone(self):
         if len(self.stones) > 0:
@@ -167,46 +189,73 @@ class Tile:
 
 
 class HomeTile(Tile):
-
     def __init__(self, pos_x: float, pos_y: float, size: float, color: pg.Color):
         super().__init__(pos_x, pos_y, size, color)
 
     def paint(self, screen: pg.surface):
-        rect_width = GameBoard.screen_width/14
-        rect_height = GameBoard.screen_height/3
-        pg.draw.rect(screen, "White", [self.pos_x, self.pos_y, rect_width, rect_height], 0, 1)
+        rect_width = GameBoard.screen_width / 14
+        rect_height = GameBoard.screen_height / 3
+        pg.draw.rect(
+            screen,
+            "White",
+            [self.pos_x, self.pos_y, rect_width, rect_height],
+            0,
+            1,
+        )
         for i, stone in enumerate(self.stones):
-            stone.paint(screen, self.pos_x, self.pos_y, i/len(self.stones), self.size/2, self.pos_y == 0)
+            stone.paint(
+                screen,
+                self.pos_x,
+                self.pos_y,
+                i / len(self.stones),
+                self.size / 2,
+                self.pos_y == 0,
+            )
 
-        
     def add_stone(self, stone: Stone):
         return super().add_stone(stone)
-    
+
     def remove_stone(self):
         return super().remove_stone()
-   
+
 
 class BarTile(Tile):
-
     def __init__(self, pos_x: float, pos_y: float, size: float, color: pg.Color):
         super().__init__(pos_x, pos_y, size, color)
 
     def paint(self, screen: pg.surface):
-        pg.draw.rect(screen, "White" ,[self.pos_x, self.pos_y, GameBoard.screen_width/14, GameBoard.screen_height/3], 0, 1)
+        pg.draw.rect(
+            screen,
+            "White",
+            [
+                self.pos_x,
+                self.pos_y,
+                GameBoard.screen_width / 14,
+                GameBoard.screen_height / 3,
+            ],
+            0,
+            1,
+        )
         for num in range(len(self.stones)):
-            self.stones[num].paint(screen, self._pos_x,
-                                   self.pos_y, num, self.size/2, True if self.pos_y is 0 else False)
+            self.stones[num].paint(
+                screen,
+                self._pos_x,
+                self.pos_y,
+                num,
+                self.size / 2,
+                True if self.pos_y == 0 else False,
+            )
 
     def add_stone(self, stone: Stone):
         return super().add_stone(stone)
-    
+
     def remove_stone(self):
         return super().remove_stone()
 
     def highlight_stone(self):
         if len(self.stones) > 0:
             self.stones[-1].highlighted = True
-    
+
     def unhighlight_stones(self):
         for stone in self.stones:
             stone.highlighted = False
@@ -226,7 +275,6 @@ class GameBoard:
         self.screen = pg.display.set_mode((self.screen_width, self.screen_height))
         self.screen.fill(self.box_color)
         self.game_over = False
-
 
     def paint(self):
         for tile in self.tiles:
@@ -248,8 +296,8 @@ class Dice:
 
     def __init__(self, pos_x: float, pos_y: float):
         self.value = 1
-        self.pos_x = pos_x-self.base_size/2
-        self.pos_y = pos_y-self.base_size/2
+        self.pos_x = pos_x - self.base_size / 2
+        self.pos_y = pos_y - self.base_size / 2
 
     def throw(self, rand_from: int, rand_to: int):
         self.roll_used = False
@@ -282,21 +330,76 @@ class Dice:
                 self.paint_two(screen)
                 self.paint_six(screen)
 
-
     def paint_one(self, screen: pg.Surface):
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 2, self.pos_y + self.base_size // 2], self.dot_base_size)
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 2,
+                self.pos_y + self.base_size // 2,
+            ],
+            self.dot_base_size,
+        )
 
     def paint_two(self, screen: pg.Surface):
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5, self.pos_y + self.base_size // 5], self.dot_base_size)
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5 * 4, self.pos_y + self.base_size // 5 * 4], self.dot_base_size)
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5,
+                self.pos_y + self.base_size // 5,
+            ],
+            self.dot_base_size,
+        )
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5 * 4,
+                self.pos_y + self.base_size // 5 * 4,
+            ],
+            self.dot_base_size,
+        )
 
     def paint_four(self, screen: pg.Surface):
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5, self.pos_y + self.base_size // 5 * 4], self.dot_base_size)
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5 * 4, self.pos_y + self.base_size // 5], self.dot_base_size)
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5,
+                self.pos_y + self.base_size // 5 * 4,
+            ],
+            self.dot_base_size,
+        )
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5 * 4,
+                self.pos_y + self.base_size // 5,
+            ],
+            self.dot_base_size,
+        )
 
     def paint_six(self, screen: pg.Surface):
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5, self.pos_y + self.base_size // 2], self.dot_base_size)
-        pg.draw.circle(screen, "Black", [self.pos_x + self.base_size // 5 * 4, self.pos_y + self.base_size // 2], self.dot_base_size)
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5,
+                self.pos_y + self.base_size // 2,
+            ],
+            self.dot_base_size,
+        )
+        pg.draw.circle(
+            screen,
+            "Black",
+            [
+                self.pos_x + self.base_size // 5 * 4,
+                self.pos_y + self.base_size // 2,
+            ],
+            self.dot_base_size,
+        )
 
 
 class TurnManager:
@@ -326,9 +429,9 @@ class TurnManager:
         tile_index = tiles.index(tile)
         for dice in dices:
             if tile_index - dice.value > 0 and self.player_on_turn == player1:
-                self.find_available_turn(tiles, tile_index-dice.value)
+                self.find_available_turn(tiles, tile_index - dice.value)
             if tile_index + dice.value < 24 and self.player_on_turn == player2:
-                self.find_available_turn(tiles, tile_index+dice.value)
+                self.find_available_turn(tiles, tile_index + dice.value)
 
     def find_available_turn(self, tiles, tile_index):
         if len(tiles[tile_index].stones) == 1:
@@ -338,7 +441,6 @@ class TurnManager:
         if len(tiles[tile_index].stones) > 0:
             if tiles[tile_index].stones[0].player == self._player_on_turn:
                 tiles[tile_index].highlighted = True
-
 
 
 # Game initialization
@@ -351,9 +453,10 @@ turn_manager = TurnManager()
 turn_manager.player_on_turn = player1
 
 # Dices
-dices = [Dice(game_board.screen_width/12*10, game_board.screen_height/2),
-         Dice(game_board.screen_width/12*11, game_board.screen_height/2)]
-
+dices = [
+    Dice(game_board.screen_width / 12 * 10, game_board.screen_height / 2),
+    Dice(game_board.screen_width / 12 * 11, game_board.screen_height / 2),
+]
 
 
 # Tiles
@@ -362,15 +465,29 @@ for y in range(2):
     for x in range(13):
         if x == 6:
             continue
-        tile_x = x * game_board.screen_width / 14 if y == 1 else game_board.screen_width - (x + 2) * game_board.screen_width / 14
+        tile_x = (
+            x * game_board.screen_width / 14
+            if y == 1
+            else game_board.screen_width - (x + 2) * game_board.screen_width / 14
+        )
         tile_y = game_board.screen_height if y == 1 else 0
-        color = (player1.color if x % 2 == 0 else player2.color) if y == 1 else (player1.color if x % 2 == 1 else player2.color)
+        color = (
+            (player1.color if x % 2 == 0 else player2.color)
+            if y == 1
+            else (player1.color if x % 2 == 1 else player2.color)
+        )
         game_board.tiles.append(Tile(tile_x, tile_y, game_board.screen_width / 14, color))
 
 
 positions = [
-    (11, player1, 5), (12, player2, 5), (18, player1, 5), (5, player2, 5),
-    (16, player1, 3), (7, player2, 3), (0, player1, 2), (23, player2, 2)
+    (11, player1, 5),
+    (12, player2, 5),
+    (18, player1, 5),
+    (5, player2, 5),
+    (16, player1, 3),
+    (7, player2, 3),
+    (0, player1, 2),
+    (23, player2, 2),
 ]
 
 for pos, player, count in positions:
@@ -383,12 +500,14 @@ pg.init()
 
 # Set up the game
 running = True
+
+
 def stop_game():
     global running
     running = False
 
-game.window.protocol("WM_DELETE_WINDOW", stop_game)
 
+game.window.protocol("WM_DELETE_WINDOW", stop_game)
 clock = pg.time.Clock()
 
 # Game loop
@@ -425,9 +544,3 @@ while running:
     game.window.update()
     clock.tick(60)
     game_board.screen.fill(game_board.box_color)
-
-
-
-
-
-
