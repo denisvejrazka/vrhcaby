@@ -190,18 +190,15 @@ class GameBoard:
             (self.screen_width, self.screen_height))
         self._screen.fill(self.box_color)
         self.game_over = False
-        self.home = Home()
 
     def paint(self):
         for tile in self.tiles:
             tile.paint(self._screen)
 
     @staticmethod
-    def move_stone(self, tile_from: Tile, tile_to: Tile):
+    def move_stone(tile_from: Tile, tile_to: Tile):
         tile_to.add_stone(tile_from.stones[-1])
         tile_from.remove_stone()
-        home_index = self.tiles.index(tile_to)
-        self.home.set_tile(home_index, tile_to)
 
 
 class Dice:
@@ -310,29 +307,6 @@ class TurnManager:
         if len(tiles[tile_index].stones) > 0:
             if tiles[tile_index].stones[0].player == self._player_on_turn:
                 tiles[tile_index].highlighted = True
-
-class Home:
-
-    def __init__(self, stones: list[Tile]):
-        self.tiles = tiles
-        game_board = GameBoard()
-
-    def set_tile(self, index, tile):
-        self.tiles[index] = tile
-        self.check_win_condition()
-
-    def check_win_condition(self):
-        #zjištění, zda jsou všechny kameny v domovském prostoru hráče 1 nebo 2 buď prázný nebo mají správně nastaveného hráče.
-        player1_home = all(len(tile.stones) == 0 or tile.stones[0].player == player1 for tile in self.tiles[:6])
-        player2_home = all(len(tile.stones) == 0 or tile.stones[0].player == player2 for tile in self.tiles[18:])
-        
-        if player1_home:
-            self.winner = 1
-        elif player2_home:
-            self.winner = 2
-
-        if self.winner is not None:
-            game_board.game_over = True
 
 
 
