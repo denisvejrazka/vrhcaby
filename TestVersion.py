@@ -566,9 +566,6 @@ for pos, player, count in positions:
     for i in range(count):
         tiles[pos].add_stone(Stone(player))
 
-# TEST
-player2.bar_tile.add_stone(Stone(player2))
-
 
 # General PyGame setup
 pg.init()
@@ -593,10 +590,6 @@ while running:
             os._exit(1)
         elif event.type == pg.MOUSEBUTTONUP:
             click_manager.click(tiles, dices, turn_manager, pg.mouse.get_pos())
-
-    # TEST
-    dices[0].value = 4
-    dices[1].value = 4
 
     # Game over check
     if game_board.game_over:
