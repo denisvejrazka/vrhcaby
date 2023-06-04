@@ -64,7 +64,39 @@ class ClickManager:
     def __init__(self):
         self.current_tile = None
 
-    def click(self, tiles, dices, turn_manager, position):
+    def click(self, tiles: list, dices: list, turn_manager, position):
+        # Highlighted bar stone clicked
+        if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
+            for stone in turn_manager.player_on_turn.bar_tile.stones:
+                if stone.highlighted and stone.circle_collider.collidepoint(position):
+                    turn_manager.find_available_bar_moves(tiles, dices, True)
+                    any_highlighted = False
+                    for stone in turn_manager.player_on_turn.bar_tile.stones:
+                        if stone.highlighted:
+                            any_highlighted = True
+                    if not any_highlighted:
+                        turn_manager.player_on_turn = player1 if turn_manager.player_on_turn == player2 else player2
+                    return
+        # Highlighted tile clicked (bar)
+        if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
+            for tile in tiles:
+                if tile.highlighted and tile.tile_collider.collidepoint(position):
+                    if len(tile.stones) == 0:
+                        GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
+                        turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                    elif len(tile.stones) > 0:
+                        if tile.stones[0].player is turn_manager.player_on_turn:
+                            GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
+                            turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                        else:
+                            GameBoard.move_stone(
+                                tile,
+                                player1.bar_tile if turn_manager.player_on_turn is not player1 else player2.bar_tile,
+                            )
+                            GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
+                            turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                    return
+
         # Highlighted stone clicked
         for tile in tiles:
             for stone in tile.stones:
@@ -72,7 +104,7 @@ class ClickManager:
                     self.current_tile = tile
                     HighlightManager.unhighlight_all(tiles)
                     tile.highlight_stone()
-                    turn_manager.find_available_turns(dices, tiles, tile)
+                    turn_manager.find_available_turns(dices, tiles, tile, True)
                     return
 
         # Highlighted tile clicked
@@ -89,29 +121,16 @@ class ClickManager:
                         GameBoard.move_stone(self.current_tile, tile)
                 elif len(tile.stones) > 1:
                     GameBoard.move_stone(self.current_tile, tile)
-                dice_value_used = (
-                    tiles.index(self.current_tile) - tiles.index(tile)
-                    if turn_manager.player_on_turn == player1
-                    else tiles.index(tile) - tiles.index(self.current_tile)
+                turn_manager.dice_value_used(
+                    tiles.index(self.current_tile) - tiles.index(tile),
+                    tiles.index(tile) - tiles.index(self.current_tile),
+                    dices,
                 )
-
-                print(dice_value_used)
-                rolls_used = 0
-                for dice in dices:
-                    if dice.value == dice_value_used:
-                        dice.roll_used = True
-                    if dice.roll_used is False:
-                        HighlightManager.unhighlight_stones(tiles)
-                        turn_manager.find_all_stones(tiles)
-                    else:
-                        rolls_used += 1
-                    if rolls_used == 2:
-                        turn_manager.player_on_turn = player1 if turn_manager.player_on_turn == player2 else player2
+                return
 
         # No tile or stone clicked
-        HighlightManager.unhighlight_all(tiles)
         self.current_tile = None
-        turn_manager.find_all_stones(tiles)
+        turn_manager.find_all_stones(tiles, dices)
 
 
 class Stone:
@@ -396,45 +415,102 @@ class TurnManager:
         self._player_on_turn = value
         self.player_changed = True
 
-    def find_all_stones(self, tiles):
-        for tile in tiles:
-            if len(tile.stones) > 0:
-                if tile.stones[0].player == self.player_on_turn:
-                    tile.highlight_stone()
+    def find_all_stones(self, tiles: list, dices: list):
+        if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
+            for result in self.find_available_bar_moves(tiles, dices, False):
+                if result is True:
+                    turn_manager.player_on_turn.bar_tile.highlight_stone()
+        else:
+            for tile in tiles:
+                if len(tile.stones) > 0:
+                    if tile.stones[0].player == self.player_on_turn:
+                        for result in self.find_available_turns(dices, tiles, tile, False):
+                            if result is True:
+                                tile.highlight_stone()
 
-    def find_available_turns(self, dices, tiles, tile):
+    def find_available_bar_moves(self, tiles: list, dices: list, highlight: bool):
+        results = []
+        if turn_manager.player_on_turn == player1:
+            for dice in dices:
+                results.append(self.find_available_bar_move(tiles, tiles[dice.value - 1], dices, highlight))
+        else:
+            for dice in dices:
+                results.append(self.find_available_bar_move(tiles, tiles[24 - dice.value], dices, highlight))
+        return results
+
+    def find_available_bar_move(self, tiles: list, tile: Tile, dices: list, highlight: bool):
+        if len(tile.stones) <= 1:
+            if highlight:
+                tile.highlighted = True
+            else:
+                return True
+        if len(tile.stones) > 1:
+            if turn_manager.player_on_turn == tile.stones[0].player:
+                if highlight:
+                    tile.highlighted = True
+                else:
+                    return True
+        elif not highlight:
+            return False
+
+    def find_available_turns(self, dices: list, tiles: list, tile: Tile, highlight: bool):
         tile_index = tiles.index(tile)
+        results = []
         for dice in dices:
             if dice.roll_used is False:
-                if tile_index - dice.value > 0 and self.player_on_turn == player1:
-                    self.find_available_turn(tiles, tile_index - dice.value)
-                if tile_index + dice.value < 24 and self.player_on_turn == player2:
-                    self.find_available_turn(tiles, tile_index + dice.value)
+                if tile_index - dice.value > 0 and self.player_on_turn == player2:
+                    results.append(self.find_available_turn(tiles, tile_index - dice.value, highlight))
+                elif tile_index + dice.value < 24 and self.player_on_turn == player1:
+                    results.append(self.find_available_turn(tiles, tile_index + dice.value, highlight))
+        return results
 
-    def find_available_turn(self, tiles, tile_index):
-        if len(tiles[tile_index].stones) == 1:
-            tiles[tile_index].highlighted = True
-        if len(tiles[tile_index].stones) == 0:
-            tiles[tile_index].highlighted = True
-        if len(tiles[tile_index].stones) > 0:
-            if tiles[tile_index].stones[0].player == self._player_on_turn:
+    def find_available_turn(self, tiles: list, tile_index: int, highlight: bool):
+        if len(tiles[tile_index].stones) <= 1:
+            if highlight:
                 tiles[tile_index].highlighted = True
+            else:
+                return True
+        elif len(tiles[tile_index].stones) > 0:
+            if tiles[tile_index].stones[0].player == self._player_on_turn:
+                if highlight:
+                    tiles[tile_index].highlighted = True
+                else:
+                    return True
+        else:
+            if not highlight:
+                return False
+
+    def dice_value_used(self, value1: int, value2: int, dices: list):
+        dice_value = value1 if self.player_on_turn == player2 else value2
+        rolls_used = 0
+        value_changed = False
+        for dice in dices:
+            if dice.value == dice_value and value_changed is False and dice.roll_used is False:
+                dice.roll_used = True
+                value_changed = True
+            if dice.roll_used is False:
+                self.find_all_stones(tiles, dices)
+            else:
+                rolls_used += 1
+            if rolls_used == 2:
+                self.player_on_turn = player1 if self.player_on_turn == player2 else player2
+                self.find_all_stones(tiles, dices)
 
 
 class HighlightManager:
     @staticmethod
-    def unhighlight_all(tiles):
+    def unhighlight_all(tiles: list):
         for tile in tiles:
             tile.highlighted = False
             tile.unhighlight_stones()
 
     @staticmethod
-    def unhighlight_tiles(tiles):
+    def unhighlight_tiles(tiles: list):
         for tile in tiles:
             tile.highlighted = False
 
     @staticmethod
-    def unhighlight_stones(tiles):
+    def unhighlight_stones(tiles: list):
         for tile in tiles:
             tile.unhighlight_stones()
 
@@ -485,19 +561,13 @@ positions = [
     (0, player1, 2),
     (23, player2, 2),
 ]
-# TEST
-player1.home_tile.add_stone(Stone(player1))
-player1.bar_tile.add_stone(Stone(player1))
-player2.home_tile.add_stone(Stone(player2))
-player2.bar_tile.add_stone(Stone(player2))
-player1.home_tile.add_stone(Stone(player1))
-player1.bar_tile.add_stone(Stone(player1))
-player2.home_tile.add_stone(Stone(player2))
-player2.bar_tile.add_stone(Stone(player2))
 
 for pos, player, count in positions:
     for i in range(count):
         tiles[pos].add_stone(Stone(player))
+
+# TEST
+player2.bar_tile.add_stone(Stone(player2))
 
 
 # General PyGame setup
@@ -524,6 +594,10 @@ while running:
         elif event.type == pg.MOUSEBUTTONUP:
             click_manager.click(tiles, dices, turn_manager, pg.mouse.get_pos())
 
+    # TEST
+    dices[0].value = 4
+    dices[1].value = 4
+
     # Game over check
     if game_board.game_over:
         # TODO: handle UI for win/loss
@@ -541,7 +615,7 @@ while running:
         turn_manager.player_changed = False
         for dice in dices:
             dice.throw(1, 6)
-        turn_manager.find_all_stones(game_board.tiles)
+        turn_manager.find_all_stones(game_board.tiles, dices)
 
     # PyGame Code
     pg.display.flip()
