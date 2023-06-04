@@ -55,7 +55,7 @@ class Player:
         self.home_tile = HomeTile(GameBoard.screen_width, tile_y, 30, "White")
         self.bar_tile = BarTile(GameBoard.screen_width / 14 * 7, tile_y, 30, "White")
 
-    def paint(self, screen):
+    def paint(self, screen: pg.surface):
         self.home_tile.paint(screen)
         self.bar_tile.paint(screen)
 
@@ -83,18 +83,30 @@ class ClickManager:
                 if tile.highlighted and tile.tile_collider.collidepoint(position):
                     if len(tile.stones) == 0:
                         GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
-                        turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                        turn_manager.dice_value_used(
+                            24 - tiles.index(tile),
+                            tiles.index(tile) + 1,
+                            dices,
+                        )
                     elif len(tile.stones) > 0:
                         if tile.stones[0].player is turn_manager.player_on_turn:
                             GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
-                            turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                            turn_manager.dice_value_used(
+                                24 - tiles.index(tile),
+                                tiles.index(tile) + 1,
+                                dices,
+                            )
                         else:
                             GameBoard.move_stone(
                                 tile,
                                 player1.bar_tile if turn_manager.player_on_turn is not player1 else player2.bar_tile,
                             )
                             GameBoard.move_stone(turn_manager.player_on_turn.bar_tile, tile)
-                            turn_manager.dice_value_used(24 - tiles.index(tile), tiles.index(tile) + 1, dices)
+                            turn_manager.dice_value_used(
+                                24 - tiles.index(tile),
+                                tiles.index(tile) + 1,
+                                dices,
+                            )
                     return
 
         # Highlighted stone clicked
@@ -145,7 +157,16 @@ class Stone:
         self.highlighted = False
         self.player = player
 
-    def paint(self, screen: pg.surface, x: float, y: float, num: int, x_shift: float, direction: bool, count: int):
+    def paint(
+        self,
+        screen: pg.surface,
+        x: float,
+        y: float,
+        num: int,
+        x_shift: float,
+        direction: bool,
+        count: int,
+    ):
         count_shift = count / 5 if count / 5 >= 1 else 1
         y_shift = (
             (y + (2 * self.base_radius) * (num / count_shift) + self.base_radius)
@@ -204,7 +225,15 @@ class Tile:
             pg.draw.polygon(screen, self.highlight_color, points, self.highlight_thickness)
 
         for i, stone in enumerate(self.stones):
-            stone.paint(screen, self.pos_x, self.pos_y, i, self.size / 2, self.pos_y == 0, len(self.stones))
+            stone.paint(
+                screen,
+                self.pos_x,
+                self.pos_y,
+                i,
+                self.size / 2,
+                self.pos_y == 0,
+                len(self.stones),
+            )
 
     def highlight_stone(self):
         if len(self.stones) > 0:
@@ -222,7 +251,13 @@ class HomeTile(Tile):
     def paint(self, screen: pg.surface):
         for i, stone in enumerate(self.stones):
             stone.paint(
-                screen, self.pos_x - 2.22 * self.size, self.pos_y, i, self.size / 2, self.pos_y == 0, len(self.stones)
+                screen,
+                self.pos_x - 2.22 * self.size,
+                self.pos_y,
+                i,
+                self.size / 2,
+                self.pos_y == 0,
+                len(self.stones),
             )
 
     def add_stone(self, stone: Stone):
@@ -239,7 +274,13 @@ class BarTile(Tile):
     def paint(self, screen: pg.surface):
         for i, stone in enumerate(self.stones):
             stone.paint(
-                screen, self.pos_x - 2.22 * self.size, self.pos_y, i, self.size / 2, self.pos_y == 0, len(self.stones)
+                screen,
+                self.pos_x - 2.22 * self.size,
+                self.pos_y,
+                i,
+                self.size / 2,
+                self.pos_y == 0,
+                len(self.stones),
             )
 
     def add_stone(self, stone: Stone):
@@ -411,7 +452,7 @@ class TurnManager:
         return self._player_on_turn
 
     @player_on_turn.setter
-    def player_on_turn(self, value):
+    def player_on_turn(self, value: Player):
         self._player_on_turn = value
         self.player_changed = True
 
