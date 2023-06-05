@@ -600,22 +600,11 @@ positions = [
     (7, player2, 3),
     (0, player1, 2),
     (23, player2, 2),
-    (22, player1, 2),  # TEST VALUE
-    (21, player1, 2),  # TEST VALUE
-    (20, player1, 2),  # TEST VALUE
-    (19, player1, 2),  # TEST VALUE
-    (18, player1, 2),  # TEST VALUE
 ]
 
 for pos, player, count in positions:
     for i in range(count):
         tiles[pos].add_stone(Stone(player))
-
-# TEST
-player2.bar_tile.add_stone(Stone(player2))
-player2.bar_tile.add_stone(Stone(player2))
-player2.bar_tile.add_stone(Stone(player2))
-player2.bar_tile.add_stone(Stone(player2))
 
 # General PyGame setup
 pg.init()
