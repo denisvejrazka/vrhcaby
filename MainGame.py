@@ -64,6 +64,15 @@ class ClickManager:
     def __init__(self):
         self.current_tile = None
 
+    def get_stone_count(self):
+        stone_counter = 0
+        for i in range(0, 5) if turn_manager.player_on_turn is player1 else range(18, 23):
+            if len(tiles[i].stones) > 0:
+                    if tiles[i].stones[0].color is turn_manager.player_on_turn.color:
+                        stone_counter += len(tiles[i].stones)
+            stone_counter += len(turn_manager.player_on_turn.home_tile.stones)
+        return stone_counter
+
     def click(self, tiles: list, dices: list, turn_manager, position):
         # Highlighted bar stone clicked
         if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
@@ -141,6 +150,8 @@ class ClickManager:
                     dices,
                 )
                 return
+            
+        self.get_stone_count()
 
         # No tile or stone clicked
         self.current_tile = None
@@ -502,9 +513,9 @@ class TurnManager:
         results = []
         for dice in dices:
             if dice.roll_used is False:
-                if tile_index - dice.value > 0 and self.player_on_turn == player2:
+                if tile_index - dice.value < 0 and self.player_on_turn == player2:
                     results.append(self.find_available_turn(tiles, tile_index - dice.value, highlight))
-                elif tile_index + dice.value < 24 and self.player_on_turn == player1:
+                elif tile_index + dice.value > 24 and self.player_on_turn == player1:
                     results.append(self.find_available_turn(tiles, tile_index + dice.value, highlight))
         return results
 
@@ -519,7 +530,11 @@ class TurnManager:
                 if highlight:
                     tiles[tile_index].highlighted = True
                 else:
-                    return True
+                    return True        
+        elif len(tiles[tile_index].stones) == -1 or len(tiles[tile_index].stones) == 24:
+            if click_manager.get_stone_count() == 15:
+                if highlight:
+                    tiles[tile_index].highlighted = True
         else:
             if not highlight:
                 return False
