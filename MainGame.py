@@ -555,6 +555,7 @@ class HighlightManager:
         for tile in tiles:
             tile.highlighted = False
             tile.unhighlight_stones()
+            turn_manager.player_on_turn.bar_tile.unhighlight_stones()
 
     @staticmethod
     def unhighlight_tiles(tiles: list):
@@ -592,7 +593,7 @@ class AiPlayer(Player):
         available_source_tiles = [] 
         turn_manager.find_all_stones(tiles, dices, True)
         for tile in tiles:
-            if tile.highlighted is True:
+            if len(tile.stones) != 0 and tile.stones[-1].highlighted is True:
                 available_source_tiles.append(tile)
 
         if len(available_source_tiles) == 0:
@@ -612,14 +613,15 @@ class AiPlayer(Player):
             
             cur_score = None
             for index, available in enumerate(available_dest_tiles):
-                # todo jak poznat jestli je to home nebo ne
                 if available is True:
+                    # todo jak poznat jestli je to home nebo ne
                     cur_score = self.state(index)
                     if best_dest_score is None or cur_score > best_dest_score:
                         best_dest_score = cur_score
                         best_dest_index = index
 
-            # todo zde ODKLIKNI kliknuty stone
+            # todo zde ODKLIKNI(odhighlightnout) kliknuty stone
+            HighlightManager.unhighlight_all(tiles)
 
             if best_dest_score is not None:
                 break #available dest tile was found
@@ -631,9 +633,9 @@ class AiPlayer(Player):
         if best_dest_index is None:
             return
         
-        stone = source_tile.pop()
+        stone = source_tile.stones.pop()
 
-        game_board.tiles[best_dest_index].append(stone)
+        game_board.tiles[best_dest_index].add_stone(stone)
 
         return
 
@@ -739,8 +741,12 @@ while running:
             dice.throw(1, 6)
         
         if type(turn_manager.player_on_turn) == AiPlayer:
+            HighlightManager.unhighlight_all(tiles)
             player2.ai_play()
-            turn_manager.player_changed = True
+            HighlightManager.unhighlight_all(tiles)
+            turn_manager.player_on_turn = (
+                                player1 if turn_manager.player_on_turn == player2 else player2
+                            )
         else:
             turn_manager.find_all_stones(game_board.tiles, dices, True)
 
