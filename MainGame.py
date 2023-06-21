@@ -144,7 +144,7 @@ class ClickManager:
 
         # No tile or stone clicked
         self.current_tile = None
-        turn_manager.find_all_stones(tiles, dices)
+        turn_manager.find_all_stones(tiles, dices, True)
 
 
 class Stone:
@@ -458,19 +458,26 @@ class TurnManager:
         self._player_on_turn = value
         self.player_changed = True
 
-    def find_all_stones(self, tiles: list, dices: list):
+    def find_all_stones(self, tiles: list, dices: list, highlight : bool):
         HighlightManager.unhighlight_all(tiles)
         if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
             for result in self.find_available_bar_moves(tiles, dices, False):
-                if result is True:
-                    turn_manager.player_on_turn.bar_tile.highlight_stone()
+                if highlight is True:
+                    if result is True:
+                        turn_manager.player_on_turn.bar_tile.highlight_stone()
+                    else:
+                        return False        
         else:
             for tile in tiles:
                 if len(tile.stones) > 0:
                     if tile.stones[0].player == self.player_on_turn:
                         for result in self.find_available_turns(dices, tiles, tile, False):
-                            if result is True:
-                                tile.highlight_stone()
+                            if highlight is True:
+                                if result is True:
+                                    tile.highlight_stone()
+                            else:
+                                return False
+        return True
 
     def find_available_bar_moves(self, tiles: list, dices: list, highlight: bool):
         results = []
@@ -496,6 +503,7 @@ class TurnManager:
                     return True
         elif not highlight:
             return False
+        return False
 
     def find_available_turns(self, dices: list, tiles: list, tile: Tile, highlight: bool):
         tile_index = tiles.index(tile)
@@ -533,12 +541,12 @@ class TurnManager:
                 dice.roll_used = True
                 value_changed = True
             if dice.roll_used is False:
-                self.find_all_stones(tiles, dices)
+                self.find_all_stones(tiles, dices, True)
             else:
                 rolls_used += 1
             if rolls_used == 2:
                 self.player_on_turn = player1 if self.player_on_turn == player2 else player2
-                self.find_all_stones(tiles, dices)
+                self.find_all_stones(tiles, dices, True)
 
 
 class HighlightManager:
@@ -559,10 +567,87 @@ class HighlightManager:
             tile.unhighlight_stones()
 
 
+
+class AiPlayer(Player):
+    def __init__(self, name: str, color, direction: bool):
+        super().__init__(name, color, direction)
+
+    def state(self, index):
+        score = 0
+        if 18 <= index <= 23: # first quarter of field
+            score = 0 
+        elif 12 <= index <= 17:
+            score = 10
+        elif 6 <= index <= 11:
+            score = 20
+        elif 0 <= index <= 5: # last quarter of field
+            score = 30
+        else:
+            score = 100 #home tile
+        
+        return score
+
+    def ai_play(self):
+        # get stones to move
+        available_source_tiles = [] 
+        turn_manager.find_all_stones(tiles, dices, True)
+        for tile in tiles:
+            if tile.highlighted is True:
+                available_source_tiles.append(tile)
+
+        if len(available_source_tiles) == 0:
+            return
+
+        # changed to set due to efficiency of removing elements
+        set_source_tiles = set(available_source_tiles)
+
+        best_dest_score = None
+        best_dest_index = None
+
+        source_tile = None
+        while len(set_source_tiles) != 0:
+            source_tile = random.sample(set_source_tiles,1)[0]
+            turn_manager.find_available_bar_move(tiles, source_tile, dices, False)
+            available_dest_tiles = turn_manager.find_available_bar_moves(tiles, dices, False)
+            
+            cur_score = None
+            for index, available in enumerate(available_dest_tiles):
+                # todo jak poznat jestli je to home nebo ne
+                if available is True:
+                    cur_score = self.state(index)
+                    if best_dest_score is None or cur_score > best_dest_score:
+                        best_dest_score = cur_score
+                        best_dest_index = index
+
+            # todo zde ODKLIKNI kliknuty stone
+
+            if best_dest_score is not None:
+                break #available dest tile was found
+
+            # this source tile did not have any dest tile .. so it continues to find another
+            set_source_tiles.remove(source_tile)
+            
+
+        if best_dest_index is None:
+            return
+        
+        stone = source_tile.pop()
+
+        game_board.tiles[best_dest_index].append(stone)
+
+        return
+
+
 # Game initialization
+ai_game = True
 game = Game()
+
 player1 = Player("Player1", "White", True)
-player2 = Player("Player2", "Black", False)
+if ai_game:
+    player2 = AiPlayer("Player2", "Black", False)
+else:
+    player2 = Player("Player2", "Black", False)
+
 click_manager = ClickManager()
 game_board = GameBoard(player1, player2)
 turn_manager = TurnManager()
@@ -652,7 +737,12 @@ while running:
         turn_manager.player_changed = False
         for dice in dices:
             dice.throw(1, 6)
-        turn_manager.find_all_stones(game_board.tiles, dices)
+        
+        if type(turn_manager.player_on_turn) == AiPlayer:
+            player2.ai_play()
+            turn_manager.player_changed = True
+        else:
+            turn_manager.find_all_stones(game_board.tiles, dices, True)
 
     # PyGame Code
     pg.display.flip()
