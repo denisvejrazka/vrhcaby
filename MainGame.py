@@ -458,30 +458,34 @@ class TurnManager:
         self._player_on_turn = value
         self.player_changed = True
 
-    def find_all_stones(self, tiles: list, dices: list, highlight : bool):
+    def find_all_stones(self, tiles: list, dices: list, highlight: bool):
         HighlightManager.unhighlight_all(tiles)
+        available_tile_indexes = []
         if len(turn_manager.player_on_turn.bar_tile.stones) > 0:
             for result in self.find_available_bar_moves(tiles, dices, False):
-                if highlight is True:
-                    if result is True:
+                if result is True:
+                    if highlight is True:
                         turn_manager.player_on_turn.bar_tile.highlight_stone()
                     else:
-                        return False        
+                        available_tile_indexes.append(True)
+                else:
+                    if not highlight:
+                        available_tile_indexes.append(False)
+
         else:
             for tile in tiles:
                 if len(tile.stones) > 0:
                     if tile.stones[0].player == self.player_on_turn:
                         for result in self.find_available_turns(dices, tiles, tile, False):
-                            if highlight is True:
-                                if result is True:
+                            if result is True:
+                                if highlight is True:
                                     tile.highlight_stone()
+                                else:
+                                    available_tile_indexes.append(True)
                             else:
-<<<<<<< HEAD
-                                return True
-=======
-                                return False
->>>>>>> 6ff40bfefb64f715b706ebd6bd6fa31aee629d7c
-        return True
+                                if not highlight:
+                                    available_tile_indexes.append(False)
+        return available_tile_indexes
 
     def find_available_bar_moves(self, tiles: list, dices: list, highlight: bool):
         results = []
@@ -638,7 +642,7 @@ class AiPlayer(Player):
         
         stone = source_tile.stones.pop()
 
-        game_board.tiles[best_dest_index].add_stone(stone)
+        game_board.move_stone(source_tile, game_board.tiles[best_dest_index])
 
         return
 
