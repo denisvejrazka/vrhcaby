@@ -620,7 +620,6 @@ class AiPlayer(Player):
                         best_dest_score = cur_score
                         best_dest_index = index
 
-            # todo zde ODKLIKNI(odhighlightnout) kliknuty stone
             HighlightManager.unhighlight_all(tiles)
 
             if best_dest_score is not None:
