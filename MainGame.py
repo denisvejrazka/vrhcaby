@@ -472,11 +472,15 @@ class TurnManager:
                 if len(tile.stones) > 0:
                     if tile.stones[0].player == self.player_on_turn:
                         for result in self.find_available_turns(dices, tiles, tile, False):
-                            if result is True:
-                                if highlight is True:
+                            if highlight is True:
+                                if result is True:
                                     tile.highlight_stone()
                             else:
+<<<<<<< HEAD
                                 return True
+=======
+                                return False
+>>>>>>> 6ff40bfefb64f715b706ebd6bd6fa31aee629d7c
         return True
 
     def find_available_bar_moves(self, tiles: list, dices: list, highlight: bool):
