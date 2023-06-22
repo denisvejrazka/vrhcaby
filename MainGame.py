@@ -321,8 +321,11 @@ class GameBoard:
 
     @staticmethod
     def move_stone(tile_from: Tile, tile_to: Tile):
-        tile_to.add_stone(tile_from.stones[-1])
-        tile_from.remove_stone()
+        if len(tile_from.stones) != 0:
+            tile_to.add_stone(tile_from.stones[-1])
+            tile_from.remove_stone()
+        else:
+            return
 
 
 class Dice:
