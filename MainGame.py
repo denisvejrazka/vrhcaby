@@ -598,7 +598,7 @@ class AiPlayer(Player):
             score = 100 #home tile
         
         return score
-
+    
     def ai_play(self):
         # get stones to move
         available_source_tiles = [] 
@@ -643,7 +643,7 @@ class AiPlayer(Player):
         if best_dest_index is None:
             return
         
-        stone = source_tile.stones.pop()
+        #stone = source_tile.stones.pop() #na nic
 
         game_board.move_stone(source_tile, game_board.tiles[best_dest_index])
 
